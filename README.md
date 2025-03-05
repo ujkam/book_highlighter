@@ -2,9 +2,13 @@
 
 Book Highlighter takes in a a typical "Read Aloud" video of a person reading a book aloud and highlights the words as they are being spoken.  There are many read aloud children's book videos on sites like YouTube, and that was the initial target of this project.
 
-![BB_highlighted](https://github.com/user-attachments/assets/0b75eae2-b68d-4649-9c6a-d4f68ed49908)
+![BB_highlighted GIF](https://github.com/user-attachments/assets/0b75eae2-b68d-4649-9c6a-d4f68ed49908)
 
-Note that this is a personal project.  It gave me a way to play around with traditional OCR, Vision APIs, and Speech-To-Text.  Eventually I ended up using Text-To-Speech for the demo video 
+Full video the GIF is extracted from
+
+https://github.com/user-attachments/assets/d065b693-9834-40e0-8890-4d1eb1d76f3e
+
+Note that this is a personal project.  It gave me a way to play around with Open CV, traditional OCR, Vision APIs, and Speech-To-Text.  Eventually this lead me to play with Text-To-Speech, which was used for the demo video shown above.
 
 # Installation 
 
