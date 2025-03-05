@@ -1,0 +1,35 @@
+[project]
+name = "bookhighlighter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = []
+
+[tool.poetry]
+name = "bookhighlighter"
+version = "0.1.0"
+description = ""
+authors = ["ujkam <43477310+ujkam@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
+whisper = "^1.1.10"
+easyocr = "^1.7.2"
+scikit-image = "^0.25.0"
+opencv-python = "^4.10.0.84"
+llvmlite = "^0.43.0"
+numba = "^0.60.0"
+openai-whisper = "^20240930"
+loguru = "^0.7.3"
+argparse = "^1.4.0"
+ruff = "^0.9.6"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

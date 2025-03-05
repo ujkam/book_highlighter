@@ -1,0 +1,2 @@
+ffmpeg -ss 14.3 -t 5.5 -i ..\output\video\combined.mp4 -vf "fps=15,scale=-1:320:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" output.gif
+
