@@ -2,9 +2,11 @@
 
 Book Highlighter takes in a a typical "Read Aloud" video of a person reading a book aloud and highlights the words as they are being spoken.  There are many read aloud children's book videos on sites like YouTube, and that was the initial target of this project.
 
+A GIF showing a short demo of a video procssed by this project.
+
 ![BB_highlighted GIF](https://github.com/user-attachments/assets/0b75eae2-b68d-4649-9c6a-d4f68ed49908)
 
-Full video the GIF is extracted from
+Full video, including audio, the GIF is extracted from.
 
 https://github.com/user-attachments/assets/d065b693-9834-40e0-8890-4d1eb1d76f3e
 
