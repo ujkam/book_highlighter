@@ -18,11 +18,13 @@ import sys
 import os
 import argparse
 from datetime import datetime
+import zipfile
+from io import BytesIO
 
 from functions import *
 
 
-def main(video_file_name):
+def main(video_file_name, page_to_image_file):
     reader = easyocr.Reader(["en"])
     current_date = datetime.now().strftime("%m_%d_%Y")
 
@@ -181,15 +183,24 @@ def main(video_file_name):
     logger.info(f"End Highlighting:{video_file_path}")
     logger.info(f"Output Video:{video_output_file_path}")
 
+    # if page_to_image_file:
+    #     logger.info(f"Saving Images")
+    #     for num,img in enumerate(all_images):
+    #         img_fname = f'../output/images/{video_file_name}_page_{num}.jpg'
+    #         img.save(img_fname)
+    if page_to_image_file:
+        create_image_zip_files(all_images, os.path.splitext(file_path)[0])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("movie_file", type=str, help="Movie path and filename")
     parser.add_argument("--log_level", type=str, help="Log Level (INFO or DEBUG)", default='DEBUG')
     parser.add_argument('--log_to_file', default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument('--page_to_image', default=False, action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
     file_path = args.movie_file
     log_level = args.log_level
+    save_image = args.page_to_image
     
     logger.remove()
     if args.log_to_file:
@@ -198,5 +209,5 @@ if __name__ == "__main__":
         logger.add(sys.stderr, level=log_level)
     
     logger.info("Start Application")
-    main(file_path)
+    main(file_path, page_to_image_file=save_image)
     logger.info("End Application")

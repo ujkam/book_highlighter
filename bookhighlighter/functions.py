@@ -6,6 +6,18 @@ import pickle
 import sys
 import whisper
 import os
+from io import BytesIO
+import zipfile
+
+def create_image_zip_files(images, file_prefix):
+    with zipfile.ZipFile(f'../output/images/{file_prefix}.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for i, img in enumerate(images):
+            with BytesIO() as img_byte_arr:
+                #Save image to memory
+                img.save(img_byte_arr, format='JPEG')
+                img_byte_arr.seek(0)
+                image_filename = f'{file_prefix}_{i+1}.jpg'
+                zipf.writestr(image_filename, img_byte_arr.read())
 
 
 
