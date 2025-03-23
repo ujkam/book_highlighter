@@ -189,14 +189,14 @@ def main(video_file_name, page_to_image_file):
     #         img_fname = f'../output/images/{video_file_name}_page_{num}.jpg'
     #         img.save(img_fname)
     if page_to_image_file:
-        create_image_zip_files(all_images, os.path.splitext(file_path)[0])
+        create_image_zip_files(all_images, os.path.splitext(file_path)[0], current_date)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("movie_file", type=str, help="Movie path and filename")
-    parser.add_argument("--log_level", type=str, help="Log Level (INFO or DEBUG)", default='DEBUG')
-    parser.add_argument('--log_to_file', default=False, action=argparse.BooleanOptionalAction)
-    parser.add_argument('--page_to_image', default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument("--log_level", type=str, help="Log Level (INFO or DEBUG)", default='INFO')
+    parser.add_argument('--log_to_file', default=False, action=argparse.BooleanOptionalAction, help='Write Logs to file (True or False)')
+    parser.add_argument('--page_to_image', default=False, action=argparse.BooleanOptionalAction, help='Writes the pages in the video as images in a zip file')
     args = parser.parse_args()
     file_path = args.movie_file
     log_level = args.log_level

@@ -9,15 +9,27 @@ import os
 from io import BytesIO
 import zipfile
 
-def create_image_zip_files(images, file_prefix):
-    with zipfile.ZipFile(f'../output/images/{file_prefix}.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+def create_image_zip_files(images, file_prefix, date_str):
+    """
+    Takes in an array of PIL image arrays and writes a zip file with the images.  
+    The files in the zip file are named in array order, so I would recommend 
+    having the order array be the same as the page order in the book being transcribed.
+
+     Args:
+        image: array of PIL images
+        load_previous_file: the name of the file (e.g. 'book_name') for the image and zip file name 
+
+    """
+    with zipfile.ZipFile(f'../output/images/{file_prefix}_{date_str}.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
         for i, img in enumerate(images):
             with BytesIO() as img_byte_arr:
-                #Save image to memory
+                #Save image to memory instead of file
                 img.save(img_byte_arr, format='JPEG')
                 img_byte_arr.seek(0)
                 image_filename = f'{file_prefix}_{i+1}.jpg'
                 zipf.writestr(image_filename, img_byte_arr.read())
+    logger.info(f"Zip of images created: '{image_filename}'")
+
 
 
 
