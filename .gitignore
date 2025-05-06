@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .ruff_cache
+
+#OS files
+.DS_Store

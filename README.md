@@ -46,16 +46,16 @@ ffmpeg -i {output_video} -i ./output/audio_extracted.mp3 -c:v copy -c:a aac ./ou
 ## Command Line Options
 ```
 --log_level INFO|DEBUG      We only have 2 debugging levels.  INFO (Default)
---zip_pages                 This creates a zip file of the individual pages in the video
+--log_to_file               Write Logs to File (True/False)
+--page_to_image            This creates a zip file of the individual pages in the video (True/False)
 ```
 
 Since this is an early version of the project, the output paths are hardcoded.
 
-Note that this project uses the openai-whisper and EasyOCR libraries, both of which support GPUs.  However, a GPU is not required.  Since read-aloud videos are typically short (e.g. 5-10 minutes), a relatively new CPU can highlight the entire video in a reasonable amount of time.
+Note that this project uses the openai-whisper and PaddleOCR libraries, both of which support GPUs.  However, a GPU is not required.  Since read-aloud videos are typically short (e.g. 5-10 minutes), a relatively new CPU can highlight the entire video in a reasonable amount of time.
 
 # To Do
 ## Bigger Changes
-- Easy UI to Crop Frames (e.g. so watermarks aren't transcribed)
 - Page skew correction
 - Test and handle books where the text is on different parts of a page
 ## Small Changes
@@ -63,3 +63,7 @@ Note that this project uses the openai-whisper and EasyOCR libraries, both of wh
 - Add Debug Information into Video Output
 - Change output paths to not be hardcoded
 - Combine the final video track and the original audio track (this needs to be done manually for now)
+
+# Release Notes
+2025-04-04: Initial release.  Focused on getting the word highlighting functinality working, along with releasing something 
+2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  

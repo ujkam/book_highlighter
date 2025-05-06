@@ -46,6 +46,14 @@ class TestFunctions(unittest.TestCase):
         t_words_track, ocr_words_track = compare_words_in_test(transcribed_words,ocr_words, start_times, end_times)
         self.assertEqual(t_words_track, ocr_words_track, 'Duplicate Last Word Test Failed')
 
+    def transcription_longer_than_ocr_match(self):
+
+        transcribed_words = ['bears', 'birthday', 'by', 'stella', 'blackstone','bear', 'has','blown', 'up', 'ten', 'big', 'bears','cat','dog','toys']
+        ocr_words = transcribed_words.copy()[:-3]
+        start_times, end_times = create_start_end_times(transcribed_words)
+        t_words_track, ocr_words_track = compare_words_in_test(transcribed_words,ocr_words, start_times, end_times)
+        self.assertEqual(t_words_track, ocr_words_track, 'Transcribed Words Longer than OCR Words Test Failed')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,14 +5,15 @@ import numpy as np
 import cv2 as cv
 from itertools import chain
 
-# import pytesseract
-# from pytesseract import Output
+import pytesseract
+from pytesseract import Output
+from paddleocr import PaddleOCR
 from skimage.metrics import structural_similarity as ssim
 import re
 from PIL import Image
 from itertools import compress
 from collections import deque
-import easyocr
+#import easyocr
 from loguru import logger
 import sys
 import os
@@ -25,7 +26,7 @@ from functions import *
 
 
 def main(video_file_name, page_to_image_file):
-    reader = easyocr.Reader(["en"])
+    #reader = easyocr.Reader(["en"])
     current_date = datetime.now().strftime("%m_%d_%Y")
 
     video_file_path, video_output_file_path, transcript_file_path = create_file_paths(video_file_name, current_date)
@@ -85,20 +86,19 @@ def main(video_file_name, page_to_image_file):
         small_image = cv.resize(grey_image, (0, 0), fx=0.2, fy=0.2)
         large_image = cv.resize(grey_image, (0, 0), fx=2, fy=2)
 
-        img_new = Image.fromarray(grey_image[:980, :])
-        # if int(timestamp % 10) == 0:
-        #    word_data = pytesseract.image_to_data(img_new, output_type=Output.DICT)
+        img_new = Image.fromarray(grey_image)
 
         if ssim_value < 0:
             small_image_old = small_image.copy()
             
             all_images.append(img_new)
-            word_data = reader.readtext(
-                np.array(img_new), width_ths=0.01, height_ths=0.01
-            )
-           
-            left, right, top, bottom, words = extract_easyocr(word_data)
-            ocr_list.append((words, timestamp))
+            
+            word_data = extract_text(img_new)
+            if len(word_data) > 0:
+                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data[0])
+            else: 
+                clean_words_filtered = []
+            
             old_word_index = 0
             ssim_stable = True
 
@@ -113,25 +113,25 @@ def main(video_file_name, page_to_image_file):
             ssim_stable = True
         
             all_images.append(img_new)
-            word_data = reader.readtext(
-                np.array(img_new), width_ths=0.01, height_ths=0.01
-            )
            
-            left, right, top, bottom, words = extract_easyocr(word_data)
-            ocr_list.append((words, timestamp))
+            word_data = extract_text(img_new)
+            if len(word_data) > 0:
+                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data[0])
+            else: 
+                clean_words_filtered = []
+            #ocr_list.append((words, timestamp))
             frame_list[frame_number] = ssim_value
             page_counter = page_counter + 1
             old_word_index = 0
             frame_test = frame.copy()
 
         
-        clean_words = [re.sub("[^A-Za-z]+", "", x.lower()) for x in words]
-        remove_list = [i != "" for i in clean_words]
-        clean_words_filtered = list(compress(clean_words, remove_list))
-        left_filtered = list(compress(left, remove_list))
-        top_filtered = list(compress(top, remove_list))
-        right_filtered = list(compress(right, remove_list))
-        bottom_filtered = list(compress(bottom, remove_list))
+        
+
+        if len(clean_words_filtered) > 0:
+            ocr_list.append((word_data[0], timestamp))
+        else: 
+            clean_words_filtered = []
 
         word_index = word_search(
             transcribed_words_clean,
@@ -148,11 +148,11 @@ def main(video_file_name, page_to_image_file):
         if word_index != -1:
             # print(word_index)
             # old_word_index = word_index
-            x0 = left_filtered[word_index]
-            x1 = right_filtered[word_index]
-            y0 = top_filtered[word_index]
-            y1 = bottom_filtered[word_index]
-            buffer = 0
+            x0 = int(left_filtered[word_index])
+            x1 = int(right_filtered[word_index])
+            y0 = int(top_filtered[word_index])
+            y1 = int(bottom_filtered[word_index])
+            buffer = 5
             cv.rectangle(
                 frame,
                 (x0 - buffer, y0 - buffer),

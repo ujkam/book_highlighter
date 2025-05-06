@@ -8,6 +8,11 @@ import whisper
 import os
 from io import BytesIO
 import zipfile
+from paddleocr import PaddleOCR,draw_ocr
+import skimage
+import pytesseract
+from pytesseract import Output
+from itertools import compress
 
 def create_image_zip_files(images, file_prefix, date_str):
     """
@@ -187,9 +192,9 @@ def word_search(
             logger.debug(f"All Ocr Index Matches: {ocr_words_index}")
             for index in ocr_words_index:
                 logger.debug(
-                    f"Ocr Words Index:{index}, Search Word Loc:{search_word_loc}"
+                    f"Ocr Words Index:{index}, Search Word Loc:{search_word_loc}, Length ocr words:{len(ocr_words)}"
                 )
-                if ((index < (len(ocr_words) - 1)) & (search_word_loc < (len(ocr_words) - 1)) ):  # Make sure we don't go past the last word on the page
+                if ((index < (len(ocr_words) - 1)) & (search_word_loc < (len(transcribed_words_np) - 1)) ):  # Make sure we don't go past the last word on the page
                     logger.debug("Checking Next Word")
                     if (
                         ocr_words_np[index + 1]
@@ -200,6 +205,7 @@ def word_search(
                             # print('Checking word_index exists')
                             if index >= old_word_index:
                                 word_index = index
+                                logger.debug(f"Matched Index:{word_index}")
                                 # print(f'word_index assigned: {word_index}')
                                 if output != ocr_words[word_index]:
                                     # print(ocr_words_np[index + 1], transcribed_words_np[search_word_loc + 1])
@@ -284,3 +290,183 @@ def configure_logging(log_level):
         retention="1 week",
         level=log_level,
     )
+
+def extract_pytesseract(data: dict):
+    text = data['text']
+    #left = data['left']
+    #top = data['top']
+    #width = data['width']
+    #height = data['height']
+
+    remove_list = [i.replace(' ','') != '' for i in text]
+    text_filtered = list(compress(text,remove_list))
+    left_filtered = list(compress(data['left'], remove_list))
+    top_filtered = list(compress(data['top'], remove_list))
+    width_filtered = list(compress(data['width'],remove_list))
+    height_filtered = list(compress(data['height'], remove_list))
+
+    return ({'text':text_filtered,
+            'left':left_filtered,
+            'top':top_filtered,
+            'width':width_filtered,
+            'height':height_filtered
+    })
+
+def calc_original_coordinates(data: dict, b_box:dict, left_border, upper_border):
+    """As part of the OCR pipeline, a box with the text in it is cropped from the original image
+    and OCR is performed on that cropped box.  This function returns the OCR text boxes from 
+    in the cropped cordinates to the original coordinates of the uncropped original image  
+
+    Args:
+        data (dict): the word box coodinates from pytessearact 
+        b_box (dict): the bounding box used for the crop
+        left_border (_type_): left border (additional pixels) for the crop
+        upper_border (_type_): upper border (additional pixels) for the crop
+
+    Returns:
+        _type_: _description_
+    """
+    result = {}
+    result['x0'] = [x + b_box['x0'] - left_border for x in data['left']] 
+    result['y0'] = [x + b_box['y0'] - upper_border for x in data['top']] 
+    result['x1'] = [x + y + b_box['x0'] - left_border for x,y in zip(data['left'],data['width'])] 
+    result['y1'] = [x + y + b_box['y0'] - upper_border for x,y in zip(data['top'],data['height'])] 
+    return result
+
+
+def group_text_boxes(paddle_result):
+    """ This takes the result from a paddle OCR call and combines the text boxes that 
+    are close to another into one a single box.
+
+    Args:
+        paddle_result (_type_): a result object from a paddle ocr call where rec=False
+
+    Returns:
+        group a list of text boxes 
+    """
+    #Note that in a paddle OCR result, the order of the coodinates is 
+    #[upper left, upper right, lower right, lower left]
+    box_dist = 0
+    group = []
+    current_group = 0
+    for i,coord in enumerate(paddle_result[0]):
+        if i > 0:
+            #Get the y coordinates for the upper and lower left corders
+            current_box_y = (coord[0][1], coord[3][1])
+            #Check if the order of boxes top to bottom or bottom to top, and calculate distance
+            #between the lower left corner of the top box, and the upper left corner of the bottom box
+            # accordingly 
+            if previous_box_y[0] < current_box_y[0]:
+                dist = current_box_y[0] - previous_box_y[1]
+            else:
+                dist = previous_box_y[0] - current_box_y[1]
+            
+            if (dist > box_height * 2):
+                current_group = current_group + 1  
+        box_height = (coord[3][1] - coord[0][1])   
+        #print(f'Old Y1:{old_y1}, New Y1:{coord[0][1]}, Y_dist:{box_dist}, Box_Height:{box_height}')
+        #Get the y coordinates for the upper and lower left corners to compare them to the next box in the list
+        previous_box_y = (coord[0][1],coord[3][1])
+        group.append(current_group)
+    return(group)   
+
+def process_image(image):
+    
+    image_np = np.array(image)
+    thresh = skimage.filters.threshold_local(image_np, 25, offset=10)
+    binary = image_np < thresh
+    return(binary)
+
+def get_coordinates_paddle(paddle_result):
+    x0 = []
+    y0 = []
+    x1 = []
+    y1 = []
+    for i in paddle_result:
+        x0.append(i[0][0])
+        y0.append(i[0][1])
+        x1.append(i[2][0])
+        y1.append(i[2][1])
+    
+    return {'x0': min(x0),
+            'y0': min(y0),
+            'x1': max(x1),
+            'y1': max(y1)}
+
+def get_bounding_boxes_paddle(image):
+    ocr = PaddleOCR() # need to run only once to download and load model into memory
+    result = ocr.ocr(image,rec=False)
+    return(result)
+
+
+def extract_text(image, return_original_coordinates=True, left_border = 10, right_border = 10, upper_border = 20, lower_border = 20):
+    """This extracts the text from the image and returns bounding boxes for each word.  It uses a two stage OCR pipeline, where 
+    PaddleOCR is used to extrance line level boxes, and that information is then combined and fed to 
+    pytessearct is used to extract word level boxes
+
+    Args:
+        image (_type_): _description_
+        return_original_coordinates (bool, optional): _description_. Defaults to True.
+        left_border (int, optional): border for the crop box. Defaults to 10.
+        right_border (int, optional): border for the crop box. Defaults to 10.
+        upper_border (int, optional): border for the crop box. Defaults to 20.
+        lower_border (int, optional): border for the crop box. Defaults to 20.
+
+    Returns:
+        dict: the text and the bounding boxes for each word 
+    """
+    ocr_output = []
+    image_np = np.array(image)
+    paddle_result = get_bounding_boxes_paddle(image_np)
+    #Paddle OCR returns a bounding box around each line of text, but we want
+    #a box around a block of text.  This code combines the line boxes that are close together into 
+    #a single box.
+    bounding_box_groups = group_text_boxes(paddle_result)
+    group_bbs = []
+    for value in set(bounding_box_groups):
+        match_idxs = [i for i, val in enumerate(bounding_box_groups) if val == value]
+        single_group = paddle_result[0][min(match_idxs):(max(match_idxs)+1)]
+        group_bbs.append(single_group)
+    b_boxes = [get_coordinates_paddle(group) for group in group_bbs]
+    #Crop each block level box and perform OCR on it.  This way pytessearct performs
+    #OCR on the cropped image with mostly text, and not on the entire image
+    for b_box in b_boxes:
+        crop_image = image.crop((b_box['x0'] - left_border, b_box['y0']- upper_border, 
+                                b_box['x1']+right_border,b_box['y1']+lower_border))
+        
+        
+        processed_image = process_image(crop_image)
+        
+        ocr_result = pytesseract.image_to_data(processed_image, output_type=Output.DICT)
+        pytesseract_data = extract_pytesseract(ocr_result)
+        #PaddleOCR sometimes sees letters in things (e.g. clouds) where there are none.
+        #This filters out the bounding boxes where there is no text 
+        if len(pytesseract_data['text']) > 0:
+            #The coordinates for the word level bounding boxes from pytessearct will be in reference to the 
+            #cropped image, not the entire image.  So we need to update the to location in the original image
+            #not the cropped one
+            original_coordinates = calc_original_coordinates(pytesseract_data, b_box, left_border, upper_border)
+            if return_original_coordinates:
+                pytesseract_data['left'] = original_coordinates['x0']
+                pytesseract_data['top'] = original_coordinates['y0']
+                pytesseract_data['right'] = original_coordinates['x1']
+                pytesseract_data['bottom'] = original_coordinates['y1']
+            ocr_output.append(pytesseract_data)
+    return ocr_output
+
+def clean_ocr_words(word_data):
+    words = word_data['text']
+    left = word_data['left']
+    right = word_data['right']
+    top = word_data['top']
+    bottom = word_data['bottom']
+    clean_words = [re.sub('[^A-Za-z]+','', x.lower()) for x in words]
+    remove_list = [i != '' for i in clean_words]
+    clean_words_filtered = list(compress(clean_words, remove_list))
+    left_filtered = list(compress(left, remove_list))
+    top_filtered = list(compress(top, remove_list))
+    right_filtered = list(compress(right,remove_list))
+    bottom_filtered = list(compress(bottom, remove_list))
+    return clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered
+
+    
