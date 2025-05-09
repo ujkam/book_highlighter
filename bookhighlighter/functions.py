@@ -13,6 +13,7 @@ import skimage
 import pytesseract
 from pytesseract import Output
 from itertools import compress
+import subprocess
 
 def create_image_zip_files(images, file_prefix, date_str):
     """
@@ -47,7 +48,7 @@ def create_file_paths(video_file_name, date):
     else:
         logger.info(f"File '{video_file_path}' does not exist.")
 
-    video_output_folder = "../output/video/"
+    video_output_folder = "../output/video/temp/" + date + "/"
     video_output_file_path = video_output_folder + video_file_name.replace(
         ".mp4", f"_words_highlighted_{date}.mp4"
     )
@@ -73,7 +74,7 @@ def transcribe_audio(video_file_path, transcript_file_path, load_previous_file=T
      transcribed_result: transcription with timestamps
     """
     if load_previous_file:
-        logger.info("Loading Transcription:{transcript_file_path}")
+        logger.info(f"Loading Transcription:{transcript_file_path}")
         with open(transcript_file_path, "rb") as file:
             transcribe_result = pickle.load(file)
     else:
@@ -82,7 +83,7 @@ def transcribe_audio(video_file_path, transcript_file_path, load_previous_file=T
         transcribe_result = model.transcribe(video_file_path, word_timestamps=True)
         with open(transcript_file_path, "wb") as file:
             pickle.dump(transcribe_result, file)
-        logger.info("Wrote Transcription:{transcript_file_path}")
+        logger.info(f"Wrote Transcription:{transcript_file_path}")
     return transcribe_result
 
 
@@ -469,4 +470,22 @@ def clean_ocr_words(word_data):
     bottom_filtered = list(compress(bottom, remove_list))
     return clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered
 
-    
+def extract_audio(video_file_path, audio_file_path):
+    extract_audio_cmd = f'ffmpeg -y -i {video_file_path} -map 0:a {audio_file_path}'
+    result = subprocess.run([extract_audio_cmd], capture_output=True, text=True, shell=True)
+    return result
+
+def combine_av(video_file_path, audio_file_path, final_video_path):
+    combine_video_cmd = f'ffmpeg -y -i {audio_file_path} -i {video_file_path} -c:v copy -c:a aac {final_video_path}'
+    result = subprocess.run([combine_video_cmd], capture_output=True, text=True, shell=True)
+    return result
+
+def create_final_video(video_file_name, video_original_file_path, video_output_file_path, current_date):
+    audio_file_name = video_file_name.replace('.mp4', '_audio_'+current_date+'.mp3')
+    audio_file_path = os.path.join(os.path.dirname(video_output_file_path),audio_file_name)
+
+    final_video_name = video_file_name.replace('.mp4', '_final_'+current_date+'.mp4')
+    final_video_path = '../output/video/Final_Video/' + final_video_name
+    result_audio = extract_audio(video_original_file_path, audio_file_path)
+    if result_audio.returncode == 0:
+        result_video = result = combine_av(video_output_file_path, audio_file_path, final_video_path)

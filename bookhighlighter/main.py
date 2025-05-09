@@ -21,6 +21,7 @@ import argparse
 from datetime import datetime
 import zipfile
 from io import BytesIO
+import subprocess
 
 from functions import *
 
@@ -30,6 +31,17 @@ def main(video_file_name, page_to_image_file):
     current_date = datetime.now().strftime("%m_%d_%Y")
 
     video_file_path, video_output_file_path, transcript_file_path = create_file_paths(video_file_name, current_date)
+    
+
+    temp_path = os.path.dirname(video_output_file_path)
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
+        print(f"Directory '{temp_path}' created.")
+    else:
+        print(f"Directory '{temp_path}' already exists.")
+    
+    logger.info(f"Creating Temp Directory {temp_path}")
+    
 
     logger.info(f"Begin Highlighting {video_file_path}")
 
@@ -190,6 +202,8 @@ def main(video_file_name, page_to_image_file):
     #         img.save(img_fname)
     if page_to_image_file:
         create_image_zip_files(all_images, os.path.splitext(file_path)[0], current_date)
+
+    create_final_video(video_file_name, video_file_path, video_output_file_path, current_date)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

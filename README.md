@@ -2,7 +2,7 @@
 
 Book Highlighter takes in a a typical "Read Aloud" video of a person reading a book aloud and highlights the words as they are being spoken.  There are many read aloud children's book videos on sites like YouTube, and that was the initial target of this project.
 
-A GIF showing a short demo of a video procssed by this project.
+A GIF showing a short demo of a video processed by this project.
 
 ![BB_highlighted GIF](https://github.com/user-attachments/assets/0b75eae2-b68d-4649-9c6a-d4f68ed49908)
 
@@ -35,13 +35,19 @@ Save log message to app.log in \logs directory
 poetry run python main.py .\file_path\video_file_name --log_to_file
 ```
 
+To create the final video, the program executes two shell commands to create the final video.  I've only tested this on my personal computer.  If this does not work when you run it, you can manually perform this by executing the following
 
-After you run the script, you'll have a video file with just the words highlighted, but with no audio.  This needs to be combined with the audio track from the original audio.  Here is an example of how ffmpeg can be used to extract to this
+1. Extract the audio track from the original file
+```
+ffmpeg -i {original_video_path} -map 0:a {extracted audio path}
+```
 
+2. Combine this audio track to the highlighted video
 ```
-ffmpeg -i {original_video} -map 0:a ./output/audio_extracted.mp3
-ffmpeg -i {output_video} -i ./output/audio_extracted.mp3 -c:v copy -c:a aac ./output/video/combined.mp4
+ffmpeg -i {highlighted_video_path} -i {extracted_audio_path} -c:v copy -c:a aac {combined_video_path}
 ```
+
+The video in the "highlighted_video_path" will be in the \output\temp\{todays_date} directory.  
 
 ## Command Line Options
 ```
@@ -65,5 +71,5 @@ Note that this project uses the openai-whisper and PaddleOCR libraries, both of 
 - Combine the final video track and the original audio track (this needs to be done manually for now)
 
 # Release Notes
-2025-04-04: Initial release.  Focused on getting the word highlighting functinality working, along with releasing something 
-2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  
+- 2025-04-04: Initial release.  Focused on getting the word highlighting functionality working, along with releasing something
+- 2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  
