@@ -70,6 +70,10 @@ Note that this project uses the openai-whisper and PaddleOCR libraries, both of 
 - Change output paths to not be hardcoded
 - Combine the final video track and the original audio track (this needs to be done manually for now)
 
-# Release Notes
+# Release Notes (Major Releases only)
 - 2025-04-04: Initial release.  Focused on getting the word highlighting functionality working, along with releasing something
 - 2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  
+
+# Thanks to the following authors and illustrators.  I used their books to build and test the code.  
+- Stella Blackstone, Debbie Harter (Bear's Birthday)
+- Roger Hargreaves (Mr. Happy)
