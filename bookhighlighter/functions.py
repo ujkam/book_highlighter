@@ -234,10 +234,12 @@ def word_search(
             logger.debug("Checking No or Single Match")
             if len(ocr_words_index) > 0:
                 word_index = int(ocr_words_index)
-                if output != ocr_words[word_index]:
-                    output = ocr_words[word_index]
-                    if print_output:
-                        print(output)
+                logger.debug(f"Word Index: {word_index}: Old Word Index: {old_word_index}")
+                if word_index >= old_word_index:
+                    if output != ocr_words[word_index]:
+                        output = ocr_words[word_index]
+                        if print_output:
+                            print(output)
     if output == "":
         return -1
     else:
@@ -345,7 +347,7 @@ def group_text_boxes(paddle_result):
     Returns:
         group a list of text boxes 
     """
-    #Note that in a paddle OCR result, the order of the coodinates is 
+    #Note that in a paddle OCR result, the order of the coordinates are 
     #[upper left, upper right, lower right, lower left]
     box_dist = 0
     group = []

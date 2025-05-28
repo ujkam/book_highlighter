@@ -144,7 +144,7 @@ def main(video_file_name, page_to_image_file):
             ocr_list.append((word_data[0], timestamp))
         else: 
             clean_words_filtered = []
-
+        logger.debug(f'Page: {page_counter}, Words:{clean_words_filtered}')
         word_index = word_search(
             transcribed_words_clean,
             clean_words_filtered,
@@ -153,8 +153,9 @@ def main(video_file_name, page_to_image_file):
             end_times,
             old_word_index=old_word_index,
         )
-
-        if word_index > old_word_index:
+        logger.debug(f"Main Function: Word Index {word_index}, Old Word Index {old_word_index}")
+        #if ((word_index > old_word_index) and (word_index - old_word_index < 3)):
+        if (word_index > old_word_index):
             old_word_index = word_index
 
         if word_index != -1:
