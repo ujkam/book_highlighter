@@ -63,7 +63,7 @@ Note that this project uses the openai-whisper and PaddleOCR libraries, both of 
 # Release Notes (Major Releases only)
 - 2025-04-04: Initial release.  Focused on getting the word highlighting functionality working, along with releasing something
 - 2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  
-- 2025-06-12: Correctly track text reading order (top to bottom, left to right).  This will also make it easier add future functionality to change directions for other languages (e.g. Arabic, Japanese)
+- 2025-06-12: Correctly track text reading order when there are multiple pages in a video frame (first the left page, then the right page).  This will also make it easier add future functionality to change directions for other languages (e.g. Arabic, Japanese)
 
 # Thanks to the following authors and illustrators.  I used their books to develop and test the code.  
 - Stella Blackstone, Debbie Harter: Bear's Birthday
