@@ -107,7 +107,7 @@ def main(video_file_name, page_to_image_file):
             
             word_data = extract_text(img_new)
             if len(word_data) > 0:
-                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data[0])
+                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data)
             else: 
                 clean_words_filtered = []
             
@@ -128,7 +128,7 @@ def main(video_file_name, page_to_image_file):
            
             word_data = extract_text(img_new)
             if len(word_data) > 0:
-                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data[0])
+                clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data)
             else: 
                 clean_words_filtered = []
             #ocr_list.append((words, timestamp))
@@ -141,7 +141,7 @@ def main(video_file_name, page_to_image_file):
         
 
         if len(clean_words_filtered) > 0:
-            ocr_list.append((word_data[0], timestamp))
+            ocr_list.append((word_data['text'], timestamp))
         else: 
             clean_words_filtered = []
         logger.debug(f'Page: {page_counter}, Words:{clean_words_filtered}')

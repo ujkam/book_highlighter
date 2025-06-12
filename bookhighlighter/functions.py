@@ -295,6 +295,12 @@ def configure_logging(log_level):
     )
 
 def extract_pytesseract(data: dict):
+    output = {'text':[],
+            'left':[],
+            'top':[],
+            'width':[],
+            'height':[]
+            }
     text = data['text']
     #left = data['left']
     #top = data['top']
@@ -307,13 +313,12 @@ def extract_pytesseract(data: dict):
     top_filtered = list(compress(data['top'], remove_list))
     width_filtered = list(compress(data['width'],remove_list))
     height_filtered = list(compress(data['height'], remove_list))
-
-    return ({'text':text_filtered,
-            'left':left_filtered,
-            'top':top_filtered,
-            'width':width_filtered,
-            'height':height_filtered
-    })
+    output['text'] = output['text'] + text_filtered
+    output['left'] = output['left'] + left_filtered
+    output['top'] = output['top'] + top_filtered
+    output['width'] = output['width'] + width_filtered
+    output['height'] = output['height'] + height_filtered
+    return(output)
 
 def calc_original_coordinates(data: dict, b_box:dict, left_border, upper_border):
     """As part of the OCR pipeline, a box with the text in it is cropped from the original image
@@ -401,8 +406,27 @@ def get_bounding_boxes_paddle(image):
     result = ocr.ocr(image,rec=False)
     return(result)
 
+def sort_bboxes(paddle_result, x_max, y_max):
+    #Extract y value for upper left hand corner of box
+    y0_values = [i[0][1] for i in paddle_result[0]]
+    #Sort each box by height on page
+    sorted_values = [paddle_result[0][i] for i in np.argsort(y0_values)]
+    #Determine if boxes are on the left or right hand of the page
+    left_boxes = [(x_max - i[0][0]) < i[0][0] for i in sorted_values]
+    #Sort boxes in top to bottom, and then left to right, as English is read
+    ordered_boxes = list(compress(sorted_values, [not x for x in left_boxes]))
+    ordered_boxes = ordered_boxes + list(compress(sorted_values, left_boxes))
+    return ordered_boxes
 
-def extract_text(image, return_original_coordinates=True, left_border = 10, right_border = 10, upper_border = 20, lower_border = 20):
+def to_bbox_dict(single_bbox):
+    return {'x0': single_bbox[0][0],
+        'y0': single_bbox[0][1],
+        'x1': single_bbox[2][0],
+        'y1': single_bbox[2][1]
+        }
+
+
+def extract_text(image, return_original_coordinates=True, left_border = 10, right_border = 10, upper_border = 10, lower_border = 10):
     """This extracts the text from the image and returns bounding boxes for each word.  It uses a two stage OCR pipeline, where 
     PaddleOCR is used to extrance line level boxes, and that information is then combined and fed to 
     pytessearct is used to extract word level boxes
@@ -420,27 +444,32 @@ def extract_text(image, return_original_coordinates=True, left_border = 10, righ
     """
     ocr_output = []
     image_np = np.array(image)
+    image_x_max,image_y_max = image.size
     paddle_result = get_bounding_boxes_paddle(image_np)
     #Paddle OCR returns a bounding box around each line of text, but we want
     #a box around a block of text.  This code combines the line boxes that are close together into 
     #a single box.
-    bounding_box_groups = group_text_boxes(paddle_result)
-    group_bbs = []
-    for value in set(bounding_box_groups):
-        match_idxs = [i for i, val in enumerate(bounding_box_groups) if val == value]
-        single_group = paddle_result[0][min(match_idxs):(max(match_idxs)+1)]
-        group_bbs.append(single_group)
-    b_boxes = [get_coordinates_paddle(group) for group in group_bbs]
+    # bounding_box_groups = group_text_boxes(paddle_result)
+    # group_bbs = []
+    # for value in set(bounding_box_groups):
+    #     match_idxs = [i for i, val in enumerate(bounding_box_groups) if val == value]
+    #     single_group = paddle_result[0][min(match_idxs):(max(match_idxs)+1)]
+    #     group_bbs.append(single_group)
+    # b_boxes = [get_coordinates_paddle(group) for group in group_bbs]
     #Crop each block level box and perform OCR on it.  This way pytessearct performs
     #OCR on the cropped image with mostly text, and not on the entire image
+    #Sort the boxes vertically, and then left to right, as they are read in English
+    ordered_boxes = sort_bboxes(paddle_result, image_x_max, image_y_max )
+    b_boxes = [to_bbox_dict(x) for x in ordered_boxes]
     for b_box in b_boxes:
         crop_image = image.crop((b_box['x0'] - left_border, b_box['y0']- upper_border, 
-                                b_box['x1']+right_border,b_box['y1']+lower_border))
+                                b_box['x1']+right_border,max(b_box['y0'],b_box['y1'])+lower_border))
         
         
-        processed_image = process_image(crop_image)
+        #processed_image = process_image(crop_image)
         
-        ocr_result = pytesseract.image_to_data(processed_image, output_type=Output.DICT)
+        #ocr_result = pytesseract.image_to_data(processed_image, output_type=Output.DICT)
+        ocr_result = pytesseract.image_to_data(crop_image, output_type=Output.DICT)
         pytesseract_data = extract_pytesseract(ocr_result)
         #PaddleOCR sometimes sees letters in things (e.g. clouds) where there are none.
         #This filters out the bounding boxes where there is no text 
@@ -455,7 +484,19 @@ def extract_text(image, return_original_coordinates=True, left_border = 10, righ
                 pytesseract_data['right'] = original_coordinates['x1']
                 pytesseract_data['bottom'] = original_coordinates['y1']
             ocr_output.append(pytesseract_data)
-    return ocr_output
+    #Combine all the OCR results
+    output = []
+    if len(ocr_output) > 0:
+        output = ocr_output[0].copy()
+    if len(ocr_output) > 1:
+        key_ref = ocr_output[0].keys()
+        for i in ocr_output[1:]:
+            for key in key_ref:
+                if key not in output:
+                    output[key] = i[key].copy()
+                else:
+                    output[key] = output[key] + i[key].copy()
+    return output
 
 def clean_ocr_words(word_data):
     words = word_data['text']

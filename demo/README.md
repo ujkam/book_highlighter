@@ -4,3 +4,4 @@ The files in this folder demonstrate some of the capabilities of this project.  
 
 1. Bears_Birthday.mp4 - Showing word highlighting with basic sentences and words
 2. mr_happy_repeated_words.mp4 - Shows correct identification of repeated words and phrases
+3. Giraffes_Cant_Dance_Left_Right_sep.mp4 - Identifying words in the correct order in the image, from top to bottom and split across pages (right to left).

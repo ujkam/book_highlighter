@@ -60,20 +60,12 @@ Since this is an early version of the project, the output paths are hardcoded.
 
 Note that this project uses the openai-whisper and PaddleOCR libraries, both of which support GPUs.  However, a GPU is not required.  Since read-aloud videos are typically short (e.g. 5-10 minutes), a relatively new CPU can highlight the entire video in a reasonable amount of time.
 
-# To Do
-## Bigger Changes
-- Page skew correction
-- Test and handle books where the text is on different parts of a page
-## Small Changes
-- Add Better error Handing to File Loads
-- Add Debug Information into Video Output
-- Change output paths to not be hardcoded
-- Combine the final video track and the original audio track (this needs to be done manually for now)
-
 # Release Notes (Major Releases only)
 - 2025-04-04: Initial release.  Focused on getting the word highlighting functionality working, along with releasing something
 - 2025-05-06: Completely revamp the OCR pipeline.  Text detection is much more accurate  
+- 2025-06-12: Correctly track text reading order (top to bottom, left to right).  This will also make it easier add future functionality to change directions for other languages (e.g. Arabic, Japanese)
 
-# Thanks to the following authors and illustrators.  I used their books to build and test the code.  
-- Stella Blackstone, Debbie Harter (Bear's Birthday)
-- Roger Hargreaves (Mr. Happy)
+# Thanks to the following authors and illustrators.  I used their books to develop and test the code.  
+- Stella Blackstone, Debbie Harter: Bear's Birthday
+- Roger Hargreaves: Mr. Happy
+- Giles Andreae, Guy Parker-Rees: Giraffe's Can't Dance
