@@ -106,7 +106,7 @@ def main(video_file_name, page_to_image_file):
             all_images.append(img_new)
             
             word_data = extract_text(img_new)
-            if len(word_data) > 0:
+            if 'text' in word_data:
                 clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data)
             else: 
                 clean_words_filtered = []
@@ -127,7 +127,7 @@ def main(video_file_name, page_to_image_file):
             all_images.append(img_new)
            
             word_data = extract_text(img_new)
-            if len(word_data) > 0:
+            if 'text' in word_data:
                 clean_words_filtered, left_filtered, top_filtered, right_filtered, bottom_filtered = clean_ocr_words(word_data)
             else: 
                 clean_words_filtered = []

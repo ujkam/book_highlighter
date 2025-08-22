@@ -485,7 +485,7 @@ def extract_text(image, return_original_coordinates=True, left_border = 10, righ
                 pytesseract_data['bottom'] = original_coordinates['y1']
             ocr_output.append(pytesseract_data)
     #Combine all the OCR results
-    output = []
+    output = {}
     if len(ocr_output) > 0:
         output = ocr_output[0].copy()
     if len(ocr_output) > 1:
